@@ -110,7 +110,7 @@ export async function POST(request: Request) {
 
   /* Stamped here rather than taken from the body: a timestamp the pusher
      controls is a timestamp that can claim to be newer than it is. */
-  const board = writeBoard(parsed.rates, new Date().toISOString());
+  const board = writeBoard(parsed.rates, new Date());
 
   return cors(
     NextResponse.json({

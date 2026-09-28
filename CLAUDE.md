@@ -439,6 +439,46 @@ why, and it documents that the usable CC0 pool here is close to exhausted —
 several sections carry a mockup instead of a photograph for that reason, not
 by oversight.
 
+## The one real API route
+
+Everything on this site is prerendered except `app/api/rates/route.ts`, which
+exists so a backend can push the current gift card board in and have the page
+use it.
+
+```
+GET  /api/rates    read the board — public, it is public pricing
+POST /api/rates    push new rates — Bearer TRIBE_RATES_TOKEN
+```
+
+```bash
+curl -X POST https://tribe.ng/api/rates \
+  -H "Authorization: Bearer $TRIBE_RATES_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"rates":[{"brand":"steam","region":"US","rate":1520}]}'
+```
+
+Four things about it that are load-bearing:
+
+- **`lib/rates.ts` owns the shape, the fallback and the store.** The route and
+  `mockups/giftcard-trade.tsx` both import from it, so a rate cannot be current
+  in one and stale in the other.
+- **The store is in memory**, which is right for `next start` behind nginx — one
+  long-lived process — and wrong for serverless, where each instance would keep
+  its own copy. Swap `readBoard`/`writeBoard` for a real store if that changes;
+  nothing else needs to move.
+- **An unset `TRIBE_RATES_TOKEN` refuses pushes with a 503.** It must never mean
+  "no secret required", which is how a write endpoint ends up open.
+- **The mockup fetches after mount, never during render.** The server render and
+  the first client render both use the fallback, and the live board replaces it
+  on the next paint. Fetching during render would put a different number in the
+  two passes, which is the hydration rule this whole folder follows. The card
+  says which board is on screen — "Live board" or "Indicative board" — because a
+  rate that silently falls back to a stale default is worse than one that admits
+  it.
+
+This is the *site's* route, not part of the fictional Tribe product API in
+`components/developers/api-data.ts`. Do not document it on `/developers`.
+
 ## Performance and deployment
 
 The pages are long and every route is statically prerendered, so the whole

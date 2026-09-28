@@ -53,9 +53,19 @@ export function readBoard(): RateBoard {
   return board;
 }
 
-export function writeBoard(rates: Rate[], at: string): RateBoard {
-  board = { rates, updated_at: at, source: "pushed" };
+export function writeBoard(rates: Rate[], at: Date): RateBoard {
+  board = { rates, updated_at: lagos(at), source: "pushed" };
   return board;
+}
+
+/* ISO 8601 at +01:00, which is what every timestamp in this API is documented
+   as and what the reference says under Conventions. `toISOString()` gives Z,
+   and a board stamped in UTC reads an hour stale to anyone in Lagos reading
+   it against their own clock. Nigeria has no DST, so the offset is fixed and
+   this is a shift, not a timezone calculation. */
+function lagos(at: Date): string {
+  const shifted = new Date(at.getTime() + 60 * 60 * 1000);
+  return `${shifted.toISOString().slice(0, 19)}+01:00`;
 }
 
 const BRANDS: BrandKey[] = ["steam", "itunes", "googleplay", "netflix"];
