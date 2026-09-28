@@ -1,26 +1,303 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Brand palette sampled from icon.png — purple #6A0DAD and orange #FF631C.
+
+   Contrast notes (these drive the variant choices in ui/button.tsx):
+     white on brand  9.3:1  primary buttons, purple bands
+     accent on white 2.9:1  NEVER text — fills, rules and icons only
+     ink on accent   6.5:1  orange buttons carry dark text
+     accent on plum  6.3:1  orange text is safe on the dark band
+     accent-ink on accent-soft 7.8:1  the only orange safe as text on a light tint */
+@theme {
+  --color-brand: #6a0dad;
+  --color-brand-deep: #55099b;
+  --color-brand-soft: #f3e9fb;
+  --color-accent: #ff631c;
+  --color-accent-deep: #e5510f;
+  --color-accent-soft: #fff0e8;
+  --color-accent-ink: #8a2a05;
+  --color-plum: #1e0433;
+  --color-plum-2: #2c0a4a;
+  --color-ink: #140a1c;
+  --color-muted: #5a4a66;
+  --color-bone: #f8f7fa;
+  --color-line: #e8e6ee;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-poppins);
+  --font-sans: var(--font-poppins);
+  --font-mono: var(--font-jetbrains);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #ffffff;
+  color: var(--color-ink);
+  font-family: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  font-synthesis-weight: none;
+}
+
+/* Sentence case at weight 800. The uppercase treatment was the shouty part,
+   not the weight — sentence case carries 800 fine even at the hero size. Sizes
+   are set by .display-hero / .display-section below, never inline. */
+.display {
+  font-family: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.032em;
+}
+
+/* The two — and only two — type steps on the page. They used to be retyped as
+   inline `text-[clamp(...)]` in twenty components, which made resizing the
+   page a twenty-file edit. They live here now; use the class, not a clamp.
+
+   Hero sits at 52-92px. Tracking has to tighten as it grows — -0.032em is
+   tuned for 54px and reads slack at 92px — and the line-height comes down
+   with it, because 1.08 opens up too much at display sizes. */
+.display-hero {
+  font-size: clamp(3.25rem, 7vw, 5.75rem);
+  letter-spacing: -0.038em;
+  line-height: 1.02;
+}
+
+.display-section {
+  font-size: clamp(2rem, 3.8vw, 3rem);
+  letter-spacing: -0.028em;
+}
+
+/* Section headings — one size step down from .display, same weight. */
+.heading {
+  font-family: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.022em;
+}
+
+/* The one surviving uppercase: a small tracked label above a heading. */
+.eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Every raised surface on the page is a hairline box, not a drop shadow. */
+.card {
+  border-radius: 14px;
+  border: 1px solid var(--color-line);
+  background: #fff;
+}
+
+/* Tabular figures keep live-updating amounts from reflowing as they change. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 48s linear infinite;
+  will-change: transform;
+}
+
+/* The gift card rail. Clipped while it scrolls itself; see the reduced-motion
+   block at the bottom, where it becomes scrollable by hand instead. */
+.marquee-rail {
+  overflow: hidden;
+}
+
+/* Slow vertical drift for floating cards over a photo. */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* A highlight sweeping across a surface — used sparingly, on one CTA. */
+@keyframes sheen {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.animate-sheen {
+  background-image: linear-gradient(
+    110deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.28) 45%,
+    transparent 60%
+  );
+  background-size: 200% 100%;
+  animation: sheen 3.5s ease-in-out infinite;
+}
+
+/* Cards that rise slightly under the cursor. */
+.lift {
+  transition:
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.lift:hover {
+  transform: translateY(-4px);
+}
+
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 0.9s linear infinite;
+}
+
+/* A horizontally scrollable pane that shows a fade at its right edge only
+   while there is more to scroll to.
+
+   This exists because the code samples run past 375px and iOS keeps its
+   overlay scrollbar hidden until you actually drag, so a scrollable line was
+   indistinguishable from a truncated one.
+
+   The mechanism is the old two-layer background trick, not a mask: a fade
+   pinned to the scroll port (`scroll`), and above it a solid cover pinned to
+   the end of the *content* (`local`). Scrolled to the end — or not scrollable
+   at all — the cover lands on top of the fade and hides it. That self-cancels
+   for a short sample, which a plain mask does not: an unconditional fade would
+   dim the right-hand end of every two-line `.env` block on the page.
+
+   `--edge-bg` is the surface the pane sits on; anything darker or lighter than
+   plum has to say so, or the cover will not match. */
+.scroll-edge {
+  --edge-bg: var(--color-plum);
+  background-image:
+    linear-gradient(to left, var(--edge-bg), var(--edge-bg)),
+    linear-gradient(to left, color-mix(in srgb, var(--edge-bg) 92%, transparent), transparent);
+  background-position: right center, right center;
+  background-repeat: no-repeat;
+  background-size: 2.5rem 100%, 2.5rem 100%;
+  background-attachment: local, scroll;
+}
+
+/* Horizontal rails scroll by drag/arrow without a visible scrollbar. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Fade-and-lift as a section scrolls into view.
+
+   This used to be a client component mounting its own IntersectionObserver,
+   used eighteen times. Eighteen hydration roots and eighteen observers were the
+   largest single contributor to Total Blocking Time on the business page. A
+   scroll-driven animation does the same job with no JavaScript at all.
+
+   `components/ui/reveal.tsx` is gone entirely now. It survived as a home for
+   `CountUp`, which animated the figures in the stats band; the stats band was
+   removed because the figures were invented, and nothing else counted.
+
+   Put the class on the element you want revealed. Do not wrap the element in
+   a div carrying the class: that is what put a `<div>` between `<ul>` and
+   `<li>` and broke the list markup last time.
+
+   The `@supports` guard is what keeps this safe. Where view timelines are not
+   implemented — Safari and Firefox, at time of writing — no rule applies and
+   the element is simply visible, which is the same guarantee the JS version
+   gave a visitor with JavaScript disabled. Never write the `from` state as a
+   plain, unguarded rule; that is how a page ends up blank for half the web.
+
+   `transform` and `opacity` do not affect layout, so this cannot shift CLS.
+
+   **Use it sparingly — view timelines are not free.** Measured on the business
+   page with Lighthouse, median of three runs: eighteen revealed elements cost
+   528ms of Total Blocking Time and scored 80; eight cost 177ms and scored 89;
+   none cost 95ms and scored 92. The cost scales with how many elements carry
+   the class, so it is now on the first content section or two of each page
+   only, where someone is actually scrolling slowly enough to notice. Do not
+   sprinkle it down the whole page again. */
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: reveal linear both;
+      animation-timeline: view();
+      /* Finished by the time the element is a quarter of the way up the
+         viewport, so nothing is still faded while it is being read. */
+      animation-range: entry 0% cover 25%;
+    }
+  }
+}
+
+/* Placeholder bars in app/loading.tsx. A slow breath rather than a sweep —
+   a shimmer racing across a screen someone is waiting on reads as impatient. */
+@keyframes skeleton {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+.skeleton {
+  animation: skeleton 1.6s ease-in-out infinite;
+}
+
+/* No `content-visibility: auto` here, and that is a decision rather than an
+   oversight. It was implemented and measured: it took home LCP from ~2550ms to
+   ~2420ms on the Lighthouse mobile profile. It also dropped the page from 34
+   exposed headings to 11, and from 103 links and buttons to 48, because
+   Chrome does not put skipped subtrees in the accessibility tree. A screen
+   reader user opening a heading list would have seen a third of the page.
+
+   130ms is not worth that. If you are tempted to add it back, measure the
+   accessibility tree as well as the LCP before you do. */
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee,
+  .animate-spin-slow,
+  .animate-float,
+  .animate-sheen,
+  .skeleton {
+    animation: none;
+  }
+
+  /* With the marquee stopped, the rail would strand every card past the second
+     one behind `overflow: hidden`. Hand it back as a scroll container — the
+     scrollbar itself stays suppressed by .no-scrollbar. */
+  .marquee-rail {
+    overflow-x: auto;
+  }
+  .lift:hover {
+    transform: none;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+  html {
+    scroll-behavior: auto !important;
+  }
 }
